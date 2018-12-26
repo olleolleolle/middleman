@@ -321,7 +321,7 @@ module Middleman
 
           vertices = nil
 
-          if resource.binary?
+          if resource.binary? || ::Middleman::Util.static_file?(resource.file_descriptor[:full_path].to_s, app.config[:frontmatter_delims])
             export_file!(output_file, resource.file_descriptor[:full_path], true)
           else
             content = resource.render({}, {})

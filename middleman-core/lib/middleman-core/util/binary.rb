@@ -284,16 +284,15 @@ module Middleman
         elsif ::Tilt.registered?(without_dot)
           false
         else
-          true
-          # dot_ext = ext.to_s[0] == '.' ? ext.dup : ".#{ext}"
+          dot_ext = ext.to_s[0] == '.' ? ext.dup : ".#{ext}"
 
-          # mime = ::Rack::Mime.mime_type(dot_ext, nil)
+          mime = ::Rack::Mime.mime_type(dot_ext, nil)
 
-          # if mime
-          #   !nonbinary_mime?(mime)
-          # else
-          #   file_contents_include_binary_bytes?(path.to_s)
-          # end
+          if mime
+            !nonbinary_mime?(mime)
+          else
+            file_contents_include_binary_bytes?(path.to_s)
+          end
         end
       end
     end
@@ -330,6 +329,43 @@ module Middleman
       end
 
       false
+    end
+
+    Contract String, Maybe[HashOf[Symbol, Any]] => Bool
+    def static_file?(path, frontmatter_delims)
+      return false if contains_frontmatter?(path, frontmatter_delims)
+
+      path = Pathname(path)
+      ext = path.extname
+      without_dot = ext.sub('.', '')
+
+      !::Tilt.registered?(without_dot)
+    end
+
+    Contract String, Maybe[HashOf[Symbol, Any]] => Bool
+    def contains_frontmatter?(path, frontmatter_delims)
+      file = ::File.open(path)
+      first_line = file.gets
+
+      first_line = file.gets if first_line =~ /\A(?:[^\r\n]*coding:[^\r\n]*\r?\n)/
+
+      file.close
+
+      possible_openers = possible_delim_openers(frontmatter_delims)
+      !first_line.nil? && !first_line.match(possible_openers).nil?
+    rescue EOFError, IOError, ::Errno::ENOENT
+      false
+    end
+
+    Contract Maybe[HashOf[Symbol, Any]] => Regexp
+    def possible_delim_openers(frontmatter_delims)
+      all_possible = frontmatter_delims
+                     .values
+                     .flatten(1)
+                     .map(&:first)
+                     .uniq
+
+      /\A#{::Regexp.union(all_possible)}/
     end
   end
 end
