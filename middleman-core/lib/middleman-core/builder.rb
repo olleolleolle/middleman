@@ -40,7 +40,8 @@ module Middleman
       @only_changed = options_hash.fetch(:only_changed, false)
       @missing_and_changed = options_hash.fetch(:missing_and_changed, false)
       @track_dependencies = options_hash.fetch(:track_dependencies, false)
-      @cleaning = options_hash.fetch(:clean)
+      @dry_run = options_hash.fetch(:dry_run)
+      @cleaning = !@dry_run && options_hash.fetch(:clean)
 
       @callbacks = ::Middleman::CallbackManager.new
       @callbacks.install_methods!(self, [:on_build_event])
@@ -264,6 +265,8 @@ module Middleman
     # @return [void]
     Contract Pathname, Or[String, Pathname], Maybe[Bool] => Any
     def export_file!(output_file, source, binary = false)
+      return if @dry_run
+
       ::Middleman::Util.instrument 'write_file', output_file: output_file do
         source = write_tempfile(output_file, source.to_s) if source.is_a? String
 

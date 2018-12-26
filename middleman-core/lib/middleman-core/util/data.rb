@@ -45,13 +45,28 @@ module Middleman
       # @param [String] path
       # @return [Array<Hash, String>]
       Contract IsA['Middleman::SourceFile'], Maybe[Symbol] => [Hash, Maybe[String]]
-      def parse(file, frontmatter_delims, known_type = nil)
-        full_path = file[:full_path]
-        return [{}, nil] if ::Middleman::Util.binary?(full_path) || file[:types].include?(:binary)
+      def parse(source_file, frontmatter_delims, known_type = nil)
+        full_path = source_file[:full_path]
+
+        return [{}, nil] if ::Middleman::Util.binary?(full_path) || source_file[:types].include?(:binary)
 
         # Avoid weird race condition when a file is renamed
         begin
-          content = file.read
+          # file = ::File.open(full_path.to_s)
+          # first_line = file.gets
+          
+          # if first_line.match(/\A(?:[^\r\n]*coding:[^\r\n]*\r?\n)/)
+          #   first_line = file.gets
+          # end
+
+          # file.close
+
+          # possible_openers = possible_delim_openers(frontmatter_delims)
+          # has_data_prefix = first_line.match(possible_openers)
+
+          # return [{}, nil] if has_data_prefix.nil?
+
+          content = source_file.read
         rescue EOFError, IOError, ::Errno::ENOENT
           return [{}, nil]
         end
@@ -85,6 +100,17 @@ module Middleman
           ]
         end
       end
+
+      def possible_delim_openers(frontmatter_delims)
+        all_possible = frontmatter_delims
+          .values
+          .flatten(1)
+          .map(&:first)
+          .uniq
+          
+        /\A#{::Regexp.union(all_possible)}/
+      end
+      memoize :possible_delim_openers
 
       def build_regex(frontmatter_delims)
         start_delims, stop_delims = frontmatter_delims

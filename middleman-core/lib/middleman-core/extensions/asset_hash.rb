@@ -10,8 +10,6 @@ class Middleman::Extensions::AssetHash < ::Middleman::Extension
   def initialize(app, options_hash = ::Middleman::EMPTY_HASH, &block)
     super
 
-    require 'digest/sha1'
-
     # Allow specifying regexes to ignore, plus always ignore apple touch icons
     @ignore = Array(options.ignore) + [/^apple-touch-icon/]
 
@@ -84,11 +82,11 @@ class Middleman::Extensions::AssetHash < ::Middleman::Extension
     return if resource.ignored?
 
     digest = if resource.binary?
-               ::Digest::SHA1.file(resource.source_file).hexdigest[0..7]
+               ::Middleman::Util.hash_file(resource.source_file)[0..7]
              else
                # Render without asset hash
                body = resource.render({}, {}) { |f| !f.respond_to?(:filter_name) || f.filter_name != :asset_hash }
-               ::Digest::SHA1.hexdigest(body)[0..7]
+               ::Middleman::Util.hash_string(body)[0..7]
              end
 
     resource_list.update!(resource, :destination_path) do
