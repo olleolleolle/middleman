@@ -81,7 +81,7 @@ class Middleman::Extensions::AssetHash < ::Middleman::Extension
     return if ignored_resource?(resource)
     return if resource.ignored?
 
-    digest = if resource.binary?
+    digest = if resource.binary? || resource.static_file?
                ::Middleman::Util.hash_file(resource.source_file)[0..7]
              else
                # Render without asset hash
